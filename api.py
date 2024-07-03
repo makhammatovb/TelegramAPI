@@ -8,29 +8,25 @@ from telethon.errors import UserPrivacyRestrictedError, FloodWaitError, ChatAdmi
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty, Channel, ChatBannedRights
 from telethon.tl.functions.channels import InviteToChannelRequest, EditBannedRequest
-from telethon.sessions import StringSession
+# from telethon.sessions import StringSession
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 phone_number = os.getenv('PHONE_NUMBER')
-session_file = 'session_name'  # Session file name
+session_file = 'session_name'
 groups_file = 'groups.json'
 
 app = Flask(__name__)
 
-# Event loop and thread setup
 loop = asyncio.new_event_loop()
 thread = threading.Thread(target=loop.run_forever)
 thread.start()
 
-# Global client variable
 client = None
 
-# Function to initialize or reinitialize the Telegram client
 async def initialize_telegram_client():
     global client
     if client:
@@ -38,7 +34,7 @@ async def initialize_telegram_client():
     if os.path.exists(f'{session_file}.session'):
         os.remove(f'{session_file}.session')
     client = TelegramClient(session_file, api_id, api_hash)
-    await client.connect()  # Ensures connection to Telegram servers
+    await client.connect()
     await client.send_code_request(phone_number)
 
 asyncio.run_coroutine_threadsafe(initialize_telegram_client(), loop).result()
@@ -58,7 +54,6 @@ def update_api_credentials():
     os.environ['API_HASH'] = api_hash
     os.environ['PHONE_NUMBER'] = phone_number
 
-    # Disconnect existing client and reinitialize with new credentials
     future = asyncio.run_coroutine_threadsafe(initialize_telegram_client(), loop)
     future.result()
 
@@ -138,7 +133,7 @@ async def invite_user_to_groups_inner(user_username, group_usernames):
         try:
             group = await client.get_entity(f'@{group_username}')
             await client(InviteToChannelRequest(group, [user]))
-            await asyncio.sleep(30)  # Adding a delay of 30 seconds
+            await asyncio.sleep(30)
         except UserPrivacyRestrictedError:
             return {"error": f"Cannot invite {user_username} to {group_username} due to privacy settings."}, 400
         except FloodWaitError as e:
